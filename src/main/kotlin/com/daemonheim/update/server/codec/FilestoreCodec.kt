@@ -1,14 +1,14 @@
 package com.daemonheim.update.server.codec
 
-import com.daemonheim.update.server.js5.FilestoreRequest
-import com.daemonheim.update.server.js5.FilestoreResponse
+import com.daemonheim.update.server.fs.FileRequest
+import com.daemonheim.update.server.fs.FileResponse
 import io.netty.buffer.ByteBuf
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.ByteToMessageCodec
 
-class FilestoreCodec : ByteToMessageCodec<FilestoreResponse>() {
+class FilestoreCodec : ByteToMessageCodec<FileResponse>() {
 
-    override fun encode(ctx: ChannelHandlerContext, msg: FilestoreResponse, out: ByteBuf) {
+    override fun encode(ctx: ChannelHandlerContext, msg: FileResponse, out: ByteBuf) {
         out.writeByte(msg.index)
         out.writeShort(msg.archive)
 
@@ -26,7 +26,6 @@ class FilestoreCodec : ByteToMessageCodec<FilestoreResponse>() {
         }
         buf.markReaderIndex()
         val opcode = buf.readByte().toInt()
-        println("Archive Request $opcode")
         when (opcode) {
             CLIENT_INIT_GAME, CLIENT_LOAD_SCREEN, CLIENT_INIT_OPCODE -> {
                 buf.skipBytes(3)
@@ -36,7 +35,7 @@ class FilestoreCodec : ByteToMessageCodec<FilestoreResponse>() {
                     val index = buf.readUnsignedByte().toInt()
                     val archive = buf.readUnsignedShort()
 
-                    val request = FilestoreRequest(index = index, archive = archive, priority = opcode == ARCHIVE_REQUEST_URGENT)
+                    val request = FileRequest(index = index, archive = archive, priority = opcode == ARCHIVE_REQUEST_URGENT)
                     out.add(request)
                 } else {
                     buf.resetReaderIndex()

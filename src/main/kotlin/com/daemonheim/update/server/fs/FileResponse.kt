@@ -1,15 +1,15 @@
-package com.daemonheim.update.server.js5
+package com.daemonheim.update.server.fs
 
 /**
  * @author Tom <rspsmods@gmail.com>
  */
-data class FilestoreResponse(val index: Int, val archive: Int, val data: ByteArray) {
+data class FileResponse(val index: Int, val archive: Int, val data: ByteArray) {
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as FilestoreResponse
+        other as FileResponse
 
         if (index != other.index) return false
         if (archive != other.archive) return false

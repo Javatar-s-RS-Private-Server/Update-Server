@@ -1,6 +1,6 @@
 package com.daemonheim.update.server.codec
 
-import com.daemonheim.update.server.js5.HandshakeResult
+import com.daemonheim.update.server.fs.HandshakeResult
 import io.netty.buffer.ByteBuf
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.ByteToMessageCodec

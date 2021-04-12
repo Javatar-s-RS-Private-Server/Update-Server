@@ -1,4 +1,4 @@
-package com.daemonheim.update.server.js5
+package com.daemonheim.update.server.fs
 
 enum class HandshakeResult(val id: Int) {
     ACCEPTABLE(0),

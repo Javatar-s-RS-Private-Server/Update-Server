@@ -1,6 +1,6 @@
-package com.daemonheim.update.server.js5
+package com.daemonheim.update.server.fs
 
-import com.daemonheim.update.server.JS5Session
+import com.daemonheim.update.server.RuneScapeFileServerSession
 import com.displee.compress.CompressionType
 import com.displee.compress.compress
 import io.netty.channel.ChannelHandlerContext
@@ -11,7 +11,7 @@ import io.netty.channel.ChannelHandlerContext
  *
  * @author Tom <rspsmods@gmail.com>
  */
-class FilestoreSystem(private val session: JS5Session) {
+class FileSystem(private val session: RuneScapeFileServerSession) {
 
     /**
      * TODO(Tom): the logic for encoding the data should be handled
@@ -20,7 +20,7 @@ class FilestoreSystem(private val session: JS5Session) {
      * was sent by the client.
      */
 
-    fun receiveMessage(ctx: ChannelHandlerContext, msg: FilestoreRequest) {
+    fun receiveMessage(ctx: ChannelHandlerContext, msg: FileRequest) {
         if (msg.index == 255) {
             encodeIndexData(ctx, msg)
         } else {
@@ -28,7 +28,7 @@ class FilestoreSystem(private val session: JS5Session) {
         }
     }
 
-    private fun encodeIndexData(ctx: ChannelHandlerContext, req: FilestoreRequest) {
+    private fun encodeIndexData(ctx: ChannelHandlerContext, req: FileRequest) {
         val data: ByteArray
         val cache = session.cache
 
@@ -42,12 +42,12 @@ class FilestoreSystem(private val session: JS5Session) {
         }
 
         if (data.isNotEmpty()) {
-            val response = FilestoreResponse(index = req.index, archive = req.archive, data = data)
+            val response = FileResponse(index = req.index, archive = req.archive, data = data)
             ctx.writeAndFlush(response)
         }
     }
 
-    private fun encodeFileData(ctx: ChannelHandlerContext, req: FilestoreRequest) {
+    private fun encodeFileData(ctx: ChannelHandlerContext, req: FileRequest) {
         val cache = session.cache
         var data = cache.index(req.index).readArchiveSector(req.archive)?.data
 
@@ -59,7 +59,7 @@ class FilestoreSystem(private val session: JS5Session) {
                 data = data.copyOf(data.size - 2)
             }
 
-            val response = FilestoreResponse(index = req.index, archive = req.archive, data = data)
+            val response = FileResponse(index = req.index, archive = req.archive, data = data)
             ctx.writeAndFlush(response)
         }
     }
