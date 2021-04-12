@@ -2,10 +2,8 @@ package com.daemonheim.update.server.js5
 
 import com.daemonheim.update.server.JS5Session
 import com.displee.compress.CompressionType
+import com.displee.compress.compress
 import io.netty.channel.ChannelHandlerContext
-import net.runelite.cache.fs.Container
-import net.runelite.cache.fs.Store
-import net.runelite.cache.fs.jagex.DiskStorage
 
 /**
  * A [ServerSystem] responsible for sending decoded [filestore] data to the
@@ -14,8 +12,6 @@ import net.runelite.cache.fs.jagex.DiskStorage
  * @author Tom <rspsmods@gmail.com>
  */
 class FilestoreSystem(private val session: JS5Session) {
-
-    private val filestore: Store by lazy { session.store }
 
     /**
      * TODO(Tom): the logic for encoding the data should be handled
@@ -32,40 +28,28 @@ class FilestoreSystem(private val session: JS5Session) {
         }
     }
 
-    fun terminate() {
-    }
-
     private fun encodeIndexData(ctx: ChannelHandlerContext, req: FilestoreRequest) {
         val data: ByteArray
+        val cache = session.cache
 
         if (req.archive == 255) {
             if (cachedIndexData == null) {
-                val buf = ctx.alloc().heapBuffer(filestore.indexes.size * 8)
-
-                filestore.indexes.forEach { index ->
-                    buf.writeInt(index.crc)
-                    buf.writeInt(index.revision)
-                }
-
-                val container = Container(CompressionType.NONE.ordinal, -1)
-                container.compress(buf.array().copyOf(buf.readableBytes()), null)
-                cachedIndexData = container.data
-                buf.release()
+                cachedIndexData = cache.generateOldUkeys().compress(CompressionType.NONE)
             }
             data = cachedIndexData!!
         } else {
-            val storage = filestore.storage as DiskStorage
-            data = storage.readIndex(req.archive)
+            data = cache.index255?.readArchiveSector(req.archive)?.data ?: byteArrayOf()
         }
 
-        val response = FilestoreResponse(index = req.index, archive = req.archive, data = data)
-        ctx.writeAndFlush(response)
+        if (data.isNotEmpty()) {
+            val response = FilestoreResponse(index = req.index, archive = req.archive, data = data)
+            ctx.writeAndFlush(response)
+        }
     }
 
     private fun encodeFileData(ctx: ChannelHandlerContext, req: FilestoreRequest) {
-        val index = filestore.findIndex(req.index)!!
-        val archive = index.getArchive(req.archive)!!
-        var data = filestore.storage.loadArchive(archive)
+        val cache = session.cache
+        var data = cache.index(req.index).readArchiveSector(req.archive)?.data
 
         if (data != null) {
             val compression = data[0]

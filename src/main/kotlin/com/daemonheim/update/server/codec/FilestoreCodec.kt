@@ -1,35 +1,26 @@
-package com.daemonheim.update.server.js5
+package com.daemonheim.update.server.codec
 
+import com.daemonheim.update.server.js5.FilestoreRequest
+import com.daemonheim.update.server.js5.FilestoreResponse
 import io.netty.buffer.ByteBuf
-import io.netty.channel.ChannelFutureListener
 import io.netty.channel.ChannelHandlerContext
+import io.netty.handler.codec.ByteToMessageCodec
 
-/**
- * @author Tom <rspsmods@gmail.com>
- */
-class FilestoreDecoder(private val serverRevision: Int) : StatefulFrameDecoder<FilestoreDecoderState>(
-    FilestoreDecoderState.REVISION_REQUEST
-) {
+class FilestoreCodec : ByteToMessageCodec<FilestoreResponse>() {
 
-    override fun decode(ctx: ChannelHandlerContext, buf: ByteBuf, out: MutableList<Any>, state: FilestoreDecoderState) {
-        decodeArchiveRequest(buf, out)
-    }
+    override fun encode(ctx: ChannelHandlerContext, msg: FilestoreResponse, out: ByteBuf) {
+        out.writeByte(msg.index)
+        out.writeShort(msg.archive)
 
-    private fun decodeRevisionRequest(ctx: ChannelHandlerContext, buf: ByteBuf) {
-        println("Handshake ${buf.readableBytes()}")
-        if (buf.readableBytes() >= 4) {
-            val revision = buf.readInt()
-            if (revision != serverRevision) {
-                ctx.writeAndFlush(LoginResultType.REVISION_MISMATCH).addListener(ChannelFutureListener.CLOSE)
-            } else {
-                println(revision)
-                setState(FilestoreDecoderState.ARCHIVE_REQUEST)
-                ctx.writeAndFlush(LoginResultType.ACCEPTABLE)
+        msg.data.forEach { data ->
+            if (out.writerIndex() % 512 == 0) {
+                out.writeByte(-1)
             }
+            out.writeByte(data.toInt())
         }
     }
 
-    private fun decodeArchiveRequest(buf: ByteBuf, out: MutableList<Any>) {
+    override fun decode(ctx: ChannelHandlerContext, buf: ByteBuf, out: MutableList<Any>) {
         if (!buf.isReadable) {
             return
         }
